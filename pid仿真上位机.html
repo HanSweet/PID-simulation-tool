@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级PID控制电机仿真系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50);
+            color: #ecf0f1;
+            min-height: 100vh;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            height: calc(100vh - 30px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            text-align: center;
+            padding: 10px 0;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            color: #3498db;
+            text-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 0.95rem;
+            color: #bdc3c7;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 15px;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .control-panel {
+            background: rgba(30, 40, 70, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .panel-title {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: #3498db;
+            text-align: center;
+        }
+        
+        .param-group {
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(127, 140, 141, 0.3);
+        }
+        
+        .param-title {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #2ecc71;
+            display: flex;
+            align-items: center;
+        }
+        
+        .param-title i {
+            margin-right: 6px;
+            font-size: 1.1rem;
+        }
+        
+        .param-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .param-label {
+            width: 110px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .param-input {
+            flex: 1;
+            padding: 7px 10px;
+            background: rgba(25, 35, 60, 0.8);
+            border: 1px solid #3498db;
+            border-radius: 5px;
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .input-mode {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .mode-btn {
+            padding: 8px;
+            background: rgba(25, 35, 60, 0.8);
+            border: 1px solid #3498db;
+            border-radius: 5px;
+            color: #ecf0f1;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 70px;
+        }
+        
+        .mode-btn .icon {
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+        }
+        
+        .mode-btn.active {
+            background: #2980b9;
+            border-color: #3498db;
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
+        }
+        
+        .control-mode {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .control-mode-btn {
+            padding: 8px;
+            background: rgba(25, 35, 60, 0.8);
+            border: 1px solid #3498db;
+            border-radius: 5px;
+            color: #ecf0f1;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 70px;
+        }
+        
+        .control-mode-btn .icon {
+            font-size: 1.3rem;
+            margin-bottom: 3px;
+        }
+        
+        .control-mode-btn.active {
+            background: #2980b9;
+            border-color: #3498db;
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
+        }
+        
+        .ctrl-btn {
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+        
+        .start-btn {
+            background: linear-gradient(to right, #27ae60, #2ecc71);
+            color: white;
+        }
+        
+        .stop-btn {
+            background: linear-gradient(to right, #c0392b, #e74c3c);
+            color: white;
+        }
+        
+        .reset-btn {
+            background: linear-gradient(to right, #2980b9, #3498db);
+            color: white;
+        }
+        
+        .export-btn {
+            background: linear-gradient(to right, #8e44ad, #9b59b6);
+            color: white;
+        }
+        
+        .ctrl-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .visualization {
+            background: rgba(30, 40, 70, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 12px;
+            flex: 1;
+            height: 100%;
+        }
+        
+        .chart-wrapper {
+            background: rgba(25, 35, 60, 0.5);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chart-title {
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+            color: #3498db;
+            text-align: center;
+        }
+        
+        .chart-container {
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 12px;
+        }
+        
+        .metric-card {
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            border-left: 3px solid #3498db;
+        }
+        
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2ecc71;
+            margin: 5px 0;
+        }
+        
+        .metric-label {
+            font-size: 0.8rem;
+            color: #bdc3c7;
+        }
+        
+        .motor-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 140px;
+            margin-top: 12px;
+        }
+        
+        .motor {
+            position: relative;
+            width: 130px;
+            height: 130px;
+        }
+        
+        .motor-body {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #7f8c8d, #2c3e50);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 5px solid #3498db;
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
+        }
+        
+        .motor-shaft {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #e74c3c;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+        
+        .rotor {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(0deg);
+            transform-origin: center;
+            transition: transform 0.1s linear;
+        }
+        
+        .rotor-blade {
+            position: absolute;
+            width: 14px;
+            height: 28px;
+            background: #3498db;
+            top: 3px;
+            left: 28px;
+            border-radius: 4px;
+        }
+        
+        .rotor-blade:nth-child(2) {
+            transform: rotate(90deg);
+        }
+        
+        .rotor-blade:nth-child(3) {
+            transform: rotate(180deg);
+        }
+        
+        .rotor-blade:nth-child(4) {
+            transform: rotate(270deg);
+        }
+        
+        .input-explanation {
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 12px;
+            border-left: 3px solid #9b59b6;
+        }
+        
+        .explanation-title {
+            color: #9b59b6;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .explanation-title i {
+            margin-right: 6px;
+        }
+        
+        .input-desc {
+            margin-bottom: 6px;
+            padding-left: 8px;
+            border-left: 2px solid #3498db;
+            font-size: 0.82rem;
+        }
+        
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .system-info {
+            background: rgba(25, 35, 60, 0.8);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            border-left: 3px solid #9b59b6;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(127, 140, 141, 0.2);
+            font-size: 0.85rem;
+        }
+        
+        .info-label {
+            color: #bdc3c7;
+        }
+        
+        .info-value {
+            color: #ecf0f1;
+            font-weight: 500;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 10px;
+            padding: 10px;
+            color: #7f8c8d;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+        
+        /* PID组显示逻辑 */
+        .pid-group {
+            display: block;
+        }
+        
+        .velocity-pid-group {
+            display: none;
+        }
+        
+        .control-mode-velocity .velocity-pid-group {
+            display: block;
+        }
+        
+        .control-mode-velocity .position-pid-group {
+            display: none;
+        }
+        
+        .control-mode-cascade .velocity-pid-group {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>高级PID控制电机仿真系统</h1>
+            <h4>Author：Hany</h4>
+            <p class="subtitle">位置控制 | 速度控制 | 串级控制 | 实时仿真</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <h2 class="panel-title">控制参数</h2>
+                
+                <div class="param-group">
+                    <h3 class="param-title"><i>⚙️</i>电机参数</h3>
+                    <div class="param-row">
+                        <span class="param-label">转动惯量 (J)</span>
+                        <input type="number" class="param-input" id="inertia" value="0.02" step="0.01" min="0.001">
+                    </div>
+                    <div class="param-row">
+                        <span class="param-label">阻尼系数 (B)</span>
+                        <input type="number" class="param-input" id="damping" value="0.1" step="0.01" min="0">
+                    </div>
+                </div>
+                
+                <div class="param-group">
+                    <h3 class="param-title"><i>🎯</i>目标值</h3>
+                    <div class="param-row">
+                        <span class="param-label">目标位置 (°)</span>
+                        <input type="number" class="param-input" id="target-position" value="90" step="5">
+                    </div>
+                    <div class="param-row">
+                        <span class="param-label">目标速度 (°/s)</span>
+                        <input type="number" class="param-input" id="target-velocity" value="30" step="5">
+                    </div>
+                        <div class="param-row">
+                        <span class="param-label">正弦频率 (Hz)</span>
+                        <input type="number" class="param-input" id="sine-freq" value="0.2" step="0.05" min="0.01">
+                    </div>
+                </div>
+                
+                <!-- 位置环PID组 -->
+                <div class="param-group position-pid-group">
+                    <h3 class="param-title"><i>📊</i>位置环PID</h3>
+                    <div class="param-row">
+                        <span class="param-label">比例 Kp</span>
+                        <input type="number" class="param-input" id="pos-kp" value="2.0" step="0.1" min="0">
+                    </div>
+                    <div class="param-row">
+                        <span class="param-label">积分 Ki</span>
+                        <input type="number" class="param-input" id="pos-ki" value="0.1" step="0.05" min="0">
+                    </div>
+                    <div class="param-row">
+                        <span class="param-label">微分 Kd</span>
+                        <input type="number" class="param-input" id="pos-kd" value="0.5" step="0.01" min="0">
+                    </div>
+                </div>
+                
+                <!-- 速度环PID组 -->
+                <div class="param-group velocity-pid-group">
+                    <h3 class="param-title"><i>📈</i>速度环PID</h3>
+                    <div class="param-row">
+                        <span class="param-label">比例 Kp</span>
+                        <input type="number" class="param-input" id="vel-kp" value="1.0" step="0.1" min="0">
+                    </div>
+                    <div class="param-row">
+                        <span class="param-label">积分 Ki</span>
+                        <input type="number" class="param-input" id="vel-ki" value="0.05" step="0.05" min="0">
+                    </div>
+                    <div class="param-row">
+                        <span class="param-label">微分 Kd</span>
+                        <input type="number" class="param-input" id="vel-kd" value="0.1" step="0.01" min="0">
+                    </div>
+                </div>
+                
+                <div class="param-group">
+                    <h3 class="param-title"><i>🔄</i>输入模式</h3>
+                    <div class="input-mode">
+                        <button class="mode-btn active" id="mode-step">
+                            <span class="icon">↗️</span>
+                            <span>阶跃</span>
+                        </button>
+                        <button class="mode-btn" id="mode-ramp">
+                            <span class="icon">↗️↗️</span>
+                            <span>斜坡</span>
+                        </button>
+                        <button class="mode-btn" id="mode-sine">
+                            <span class="icon">〰️</span>
+                            <span>正弦</span>
+                        </button>
+                    </div>
+                    
+                    <h3 class="param-title" style="margin-top: 12px;"><i>🎚️</i>控制模式</h3>
+                    <div class="control-mode">
+                        <button class="control-mode-btn active" id="mode-position">
+                            <span class="icon">📍</span>
+                            <span>位置</span>
+                        </button>
+                        <button class="control-mode-btn" id="mode-velocity">
+                            <span class="icon">⏱️</span>
+                            <span>速度</span>
+                        </button>
+                        <button class="control-mode-btn" id="mode-cascade">
+                            <span class="icon">🔗</span>
+                            <span>串级</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="input-explanation">
+                    <div class="explanation-title"><i>ℹ️</i>控制说明：</div>
+                    <div class="input-desc"><strong>位置控制</strong>：电机转到指定位置停止</div>
+                    <div class="input-desc"><strong>速度控制</strong>：电机按设定速度持续转动</div>
+                    <div class="input-desc"><strong>串级控制</strong>：位置环+速度环协同工作</div>
+                </div>
+                
+                <div class="control-buttons">
+                    <button class="ctrl-btn start-btn" id="start-btn">开始</button>
+                    <button class="ctrl-btn stop-btn" id="stop-btn">停止</button>
+                    <button class="ctrl-btn reset-btn" id="reset-btn">重置</button>
+                    <button class="ctrl-btn export-btn" id="export-btn">导出</button>
+                </div>
+            </div>
+            
+            <div class="visualization">
+                <div class="charts-container">
+                    <div class="chart-wrapper">
+                        <div class="chart-title">位置跟踪</div>
+                        <div class="chart-container">
+                            <canvas id="angle-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-wrapper">
+                        <div class="chart-title">速度跟踪</div>
+                        <div class="chart-container">
+                            <canvas id="velocity-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-wrapper">
+                        <div class="chart-title">位置误差</div>
+                        <div class="chart-container">
+                            <canvas id="position-error-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-wrapper">
+                        <div class="chart-title">速度误差</div>
+                        <div class="chart-container">
+                            <canvas id="velocity-error-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="performance-metrics">
+                    <div class="metric-card">
+                        <div class="metric-label">位置误差</div>
+                        <div class="metric-value" id="position-error">0.0°</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">速度误差</div>
+                        <div class="metric-value" id="velocity-error">0.0°/s</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">控制输出</div>
+                        <div class="metric-value" id="control-output">0.0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">运行时间</div>
+                        <div class="metric-value" id="runtime">0.0s</div>
+                    </div>
+                </div>
+                
+                <div class="motor-container">
+                    <div class="motor">
+                        <div class="motor-body"></div>
+                        <div class="rotor" id="rotor">
+                            <div class="rotor-blade"></div>
+                            <div class="rotor-blade"></div>
+                            <div class="rotor-blade"></div>
+                            <div class="rotor-blade"></div>
+                        </div>
+                        <div class="motor-shaft"></div>
+                    </div>
+                </div>
+                
+                <div class="system-info">
+                    <div class="info-row">
+                        <span class="info-label">仿真时间:</span>
+                        <span class="info-value" id="sim-time">0.0s</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">输入模式:</span>
+                        <span class="info-value" id="input-mode-display">阶跃</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">控制模式:</span>
+                        <span class="info-value" id="control-mode-display">位置</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">电机状态:</span>
+                        <span class="info-value" id="motor-status">停止</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+         
+            <p>高级PID控制电机仿真系统 | 优化版本1.8 | 修复已知问题,个人能力有限可能存在未知问题，仅供学习参考(*￣︶￣)</p>
+            <p>2025.6</p>
+        </footer>
+    </div>
+
+    <script>
+        // 全局变量
+        let simulationRunning = false;
+        let simulationInterval;
+        let simTime = 0;
+        let dataPoints = 0;
+        let lastRenderTime = 0;
+        
+        // 系统状态
+        let currentAngle = 0;
+        let currentVelocity = 0;
+        let prevPositionError = 0;
+        let positionIntegral = 0;
+        let prevVelocityError = 0;
+        let velocityIntegral = 0;
+        let controlOutput = 0;
+        let targetPosition = 0;
+        let targetVelocity = 0;
+        let inputMode = 'step'; // step, ramp, sine
+        let controlMode = 'position'; // position, velocity, cascade
+        
+        // 数据记录
+        const timeData = [];
+        const angleData = [];
+        const velocityData = [];
+        const targetPositionData = [];
+        const targetVelocityData = [];
+        const outputData = [];
+        const positionErrorData = [];
+        const velocityErrorData = [];
+        
+        // 获取DOM元素
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const rotor = document.getElementById('rotor');
+        const motorStatus = document.getElementById('motor-status');
+        
+        // 初始化图表
+        const angleCtx = document.getElementById('angle-chart').getContext('2d');
+        const velocityCtx = document.getElementById('velocity-chart').getContext('2d');
+        const positionErrorCtx = document.getElementById('position-error-chart').getContext('2d');
+        const velocityErrorCtx = document.getElementById('velocity-error-chart').getContext('2d');
+        
+        const angleChart = new Chart(angleCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: '实际位置',
+                        data: [],
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: '目标位置',
+                        data: [],
+                        borderColor: '#2ecc71',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '时间 (s)',
+                            color: '#ecf0f1'
+                        },
+                        grid: {
+                            color: 'rgba(127, 140, 141, 0.2)'
+                        },
+                        ticks: {
+                            color: '#bdc3c7',
+                            maxTicksLimit: 8
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '位置 (°)',
+                            color: '#ecf0f1'
+                        },
+                        grid: {
+                            color: 'rgba(127, 140, 141, 0.2)'
+                        },
+                        ticks: {
+                            color: '#bdc3c7'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ecf0f1'
+                        }
+                    }
+                }
+            }
+        });
+        
+        const velocityChart = new Chart(velocityCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: '实际速度',
+                        data: [],
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: '目标速度',
+                        data: [],
+                        borderColor: '#f1c40f',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '时间 (s)',
+                            color: '#ecf0f1'
+                        },
+                        grid: {
+                            color: 'rgba(127, 140, 141, 0.2)'
+                        },
+                        ticks: {
+                            color: '#bdc3c7',
+                            maxTicksLimit: 8
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '速度 (°/s)',
+                            color: '#ecf0f1'
+                        },
+                        suggestedMin: -100,
+                        suggestedMax: 100,
+                        grid: {
+                            color: 'rgba(127, 140, 141, 0.2)'
+                        },
+                        ticks: {
+                            color: '#bdc3c7'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ecf0f1'
+                        }
+                    }
+                }
+            }
+        });
+        
+        const positionErrorChart = new Chart(positionErrorCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: '位置误差',
+                        data: [],
+                        borderColor: '#f39c12',
+                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '时间 (s)',
+                            color: '#ecf0f1'
+                        },
+                        grid: {
+                            color: 'rgba(127, 140, 141, 0.2)'
+                        },
+                        ticks: {
+                            color: '#bdc3c7',
+                            maxTicksLimit: 8
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '误差 (°)',
+                            color: '#ecf0f1'
+                        },
+                        grid: {
+                            color: 'rgba(127, 140, 141, 0.2)'
+                        },
+                        ticks: {
+                            color: '#bdc3c7'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ecf0f1'
+                        }
+                    }
+                }
+            }
+        });
+        
+        const velocityErrorChart = new Chart(velocityErrorCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: '速度误差',
+                        data: [],
+                        borderColor: '#9b59b6',
+                        backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '时间 (s)',
+                            color: '#ecf0f1'
+                        },
+                        grid: {
+                            color: 'rgba(127, 140, 141, 0.2)'
+                        },
+                        ticks: {
+                            color: '#bdc3c7',
+                            maxTicksLimit: 8
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '误差 (°/s)',
+                            color: '#ecf0f1'
+                        },
+                        grid: {
+                            color: 'rgba(127, 140, 141, 0.2)'
+                        },
+                        ticks: {
+                            color: '#bdc3c7'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ecf0f1'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 初始化输入模式按钮
+        const modeButtons = document.querySelectorAll('.mode-btn');
+        modeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                modeButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                inputMode = this.id.replace('mode-', '');
+                document.getElementById('input-mode-display').textContent = 
+                    inputMode === 'step' ? '阶跃' : 
+                    inputMode === 'ramp' ? '斜坡' : '正弦';
+            });
+        });
+        
+        // 初始化控制模式按钮
+        const controlModeButtons = document.querySelectorAll('.control-mode-btn');
+        controlModeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                controlModeButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                controlMode = this.id.replace('mode-', '');
+                document.getElementById('control-mode-display').textContent = 
+                    controlMode === 'position' ? '位置' : 
+                    controlMode === 'velocity' ? '速度' : '串级';
+                
+                // 更新PID组显示
+                updatePidGroupVisibility();
+            });
+        });
+        
+        // 更新PID组可见性
+        function updatePidGroupVisibility() {
+            const positionGroup = document.querySelector('.position-pid-group');
+            const velocityGroup = document.querySelector('.velocity-pid-group');
+            
+            if (controlMode === 'position') {
+                positionGroup.style.display = 'block';
+                velocityGroup.style.display = 'none';
+            } else if (controlMode === 'velocity') {
+                positionGroup.style.display = 'none';
+                velocityGroup.style.display = 'block';
+            } else {
+                positionGroup.style.display = 'block';
+                velocityGroup.style.display = 'block';
+            }
+        }
+        
+        // PID控制器函数
+        function computePID(error, prevError, integral, kp, ki, kd, dt) {
+            // 积分项
+            integral += error * dt;
+            
+            // 微分项
+            const derivative = (error - prevError) / dt;
+            
+            // PID输出
+            return kp * error + ki * integral + kd * derivative;
+        }
+        
+        // 电机模型
+        function updateMotorModel(control, dt) {
+            const inertia = parseFloat(document.getElementById('inertia').value) || 0.02;
+            const damping = parseFloat(document.getElementById('damping').value) || 0.1;
+            
+            // 电机动力学模型
+            const torque = control;
+            const acceleration = (torque - damping * currentVelocity) / inertia;
+            currentVelocity += acceleration * dt;
+            currentAngle += currentVelocity * dt;
+            
+            // 更新电机动画
+            const now = performance.now();
+            if (now - lastRenderTime > 16) { // 约60fps
+                rotor.style.transform = `translate(-50%, -50%) rotate(${currentAngle % 360}deg)`;
+                lastRenderTime = now;
+            }
+            
+            return currentAngle;
+        }
+
+
+     
+
+ // 获取目标位置
+        function getTargetPosition(time) {
+            const basePosition = parseFloat(document.getElementById('target-position').value) || 90;
+            const sineFreq = parseFloat(document.getElementById('sine-freq').value) || 0.2;
+            
+            switch(inputMode) {
+                case 'step':
+                    return time > 0.5 ? basePosition : 0;
+                case 'ramp':
+                    // 斜坡输入：位置匀速变化
+                    return Math.min(basePosition, basePosition * (time - 0.5) * 2);
+                case 'sine':
+                    // 正弦输入：位置按正弦变化
+                    return basePosition * Math.sin(2 * Math.PI * time * sineFreq);
+                default:
+                    return basePosition;
+            }
+        }
+        
+        // 获取目标速度
+        function getTargetVelocity(time) {
+            const baseVelocity = parseFloat(document.getElementById('target-velocity').value) || 30;
+            const sineFreq = parseFloat(document.getElementById('sine-freq').value) || 0.2;
+            
+            if (inputMode === 'step') {
+                return time > 0.5 ? baseVelocity : 0;
+            } else if (inputMode === 'ramp') {
+                return time > 0.5 ? baseVelocity : 0;
+            } else if (inputMode === 'sine') {
+                // 正弦输入：速度按余弦变化（位置正弦的导数）
+                return baseVelocity * 2 * Math.PI * sineFreq * Math.cos(2 * Math.PI * time * sineFreq);
+            }
+            return baseVelocity;
+        }
+
+        // 仿真步进
+        function simulationStep() {
+            if (!simulationRunning) return;
+            
+            const dt = 0.02; // 20ms仿真步长
+            simTime += dt;
+            dataPoints++;
+            
+            // 获取PID参数
+            const posKp = parseFloat(document.getElementById('pos-kp').value) || 2.0;
+            const posKi = parseFloat(document.getElementById('pos-ki').value) || 0.1;
+            const posKd = parseFloat(document.getElementById('pos-kd').value) || 0.5;
+            const velKp = parseFloat(document.getElementById('vel-kp').value) || 1.0;
+            const velKi = parseFloat(document.getElementById('vel-ki').value) || 0.05;
+            const velKd = parseFloat(document.getElementById('vel-kd').value) || 0.1;
+            
+            // 更新目标位置
+            targetPosition = getTargetPosition(simTime);
+            
+            // 更新目标速度
+            targetVelocity = getTargetVelocity(simTime);
+            
+            // 根据控制模式计算控制输出
+            let positionError = 0;
+            let velocityError = 0;
+            
+            if (controlMode === 'position') {
+                // 位置控制模式
+                positionError = targetPosition - currentAngle;
+                controlOutput = computePID(positionError, prevPositionError, positionIntegral, posKp, posKi, posKd, dt);
+                prevPositionError = positionError;
+                positionIntegral += positionError * dt;
+                
+                // 速度误差用于显示
+                velocityError = targetVelocity - currentVelocity;
+            }
+            else if (controlMode === 'velocity') {
+                // 速度控制模式
+                velocityError = targetVelocity - currentVelocity;
+                controlOutput = computePID(velocityError, prevVelocityError, velocityIntegral, velKp, velKi, velKd, dt);
+                prevVelocityError = velocityError;
+                velocityIntegral += velocityError * dt;
+                
+                // 位置误差用于显示
+                positionError = targetPosition - currentAngle;
+            }
+            else {
+                // 串级控制模式
+                // 外环：位置PID
+                positionError = targetPosition - currentAngle;
+                const velocitySetpoint = computePID(positionError, prevPositionError, positionIntegral, posKp, posKi, posKd, dt);
+                prevPositionError = positionError;
+                positionIntegral += positionError * dt;
+                
+                // 内环：速度PID
+                velocityError = velocitySetpoint - currentVelocity;
+                controlOutput = computePID(velocityError, prevVelocityError, velocityIntegral, velKp, velKi, velKd, dt);
+                prevVelocityError = velocityError;
+                velocityIntegral += velocityError * dt;
+            }
+            
+            // 限制控制输出
+            controlOutput = Math.max(-10, Math.min(10, controlOutput));
+            
+            // 更新电机模型
+            updateMotorModel(controlOutput, dt);
+            
+            // 记录数据
+            timeData.push(simTime);
+            angleData.push(currentAngle);
+            velocityData.push(currentVelocity);
+            targetPositionData.push(targetPosition);
+            targetVelocityData.push(targetVelocity);
+            outputData.push(controlOutput);
+            positionErrorData.push(positionError);
+            velocityErrorData.push(velocityError);
+            
+            // 更新图表
+            updateCharts();
+            
+            // 更新UI显示
+            updateUI();
+            
+            // 限制数据长度
+            if (timeData.length > 500) {
+                timeData.shift();
+                angleData.shift();
+                velocityData.shift();
+                targetPositionData.shift();
+                targetVelocityData.shift();
+                outputData.shift();
+                positionErrorData.shift();
+                velocityErrorData.shift();
+            }
+        }
+        
+        // 更新图表
+        function updateCharts() {
+            // 更新角度图表
+            angleChart.data.labels = timeData;
+            angleChart.data.datasets[0].data = angleData;
+            angleChart.data.datasets[1].data = targetPositionData;
+            angleChart.update();
+            
+            // 更新速度图表
+            velocityChart.data.labels = timeData;
+            velocityChart.data.datasets[0].data = velocityData;
+            velocityChart.data.datasets[1].data = targetVelocityData;
+            velocityChart.update();
+            
+            // 更新位置误差图表
+            positionErrorChart.data.labels = timeData;
+            positionErrorChart.data.datasets[0].data = positionErrorData;
+            positionErrorChart.update();
+            
+            // 更新速度误差图表
+            velocityErrorChart.data.labels = timeData;
+            velocityErrorChart.data.datasets[0].data = velocityErrorData;
+            velocityErrorChart.update();
+        }
+        
+        // 更新UI显示
+        function updateUI() {
+            document.getElementById('position-error').textContent = positionErrorData[positionErrorData.length - 1].toFixed(2) + '°';
+            document.getElementById('velocity-error').textContent = velocityErrorData[velocityErrorData.length - 1].toFixed(2) + '°/s';
+            document.getElementById('control-output').textContent = controlOutput.toFixed(2);
+            document.getElementById('runtime').textContent = simTime.toFixed(1) + 's';
+            document.getElementById('sim-time').textContent = simTime.toFixed(2) + 's';
+            
+            // 更新电机状态
+            if (Math.abs(currentVelocity) > 0.1) {
+                motorStatus.textContent = '运行中 (' + currentVelocity.toFixed(1) + '°/s)';
+                motorStatus.style.color = '#2ecc71';
+            } else {
+                motorStatus.textContent = '停止';
+                motorStatus.style.color = '#e74c3c';
+            }
+        }
+        
+        // 开始仿真
+        startBtn.addEventListener('click', function() {
+            if (simulationRunning) return;
+            
+            simulationRunning = true;
+            simulationInterval = setInterval(simulationStep, 20);
+        });
+        
+        // 停止仿真
+        stopBtn.addEventListener('click', function() {
+            simulationRunning = false;
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+            }
+        });
+        
+        // 重置系统
+        resetBtn.addEventListener('click', function() {
+            simulationRunning = false;
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+            }
+            
+            // 重置状态
+            simTime = 0;
+            dataPoints = 0;
+            currentAngle = 0;
+            currentVelocity = 0;
+            prevPositionError = 0;
+            positionIntegral = 0;
+            prevVelocityError = 0;
+            velocityIntegral = 0;
+            controlOutput = 0;
+            targetPosition = 0;
+            targetVelocity = 0;
+            
+            // 清除数据
+            timeData.length = 0;
+            angleData.length = 0;
+            velocityData.length = 0;
+            targetPositionData.length = 0;
+            targetVelocityData.length = 0;
+            outputData.length = 0;
+            positionErrorData.length = 0;
+            velocityErrorData.length = 0;
+            
+            // 更新UI
+            document.getElementById('position-error').textContent = '0.0°';
+            document.getElementById('velocity-error').textContent = '0.0°/s';
+            document.getElementById('control-output').textContent = '0.0';
+            document.getElementById('runtime').textContent = '0.0s';
+            document.getElementById('sim-time').textContent = '0.00s';
+            motorStatus.textContent = '停止';
+            motorStatus.style.color = '#e74c3c';
+            
+            // 重置电机动画
+            rotor.style.transform = 'translate(-50%, -50%) rotate(0deg)';
+            
+            // 更新图表
+            updateCharts();
+        });
+        
+        // 导出数据
+        exportBtn.addEventListener('click', function() {
+            if (timeData.length === 0) {
+                alert('没有数据可导出！');
+                return;
+            }
+            
+            let csvContent = "时间(s),目标位置(°),实际位置(°),目标速度(°/s),实际速度(°/s),控制输出,位置误差(°),速度误差(°/s)\n";
+            
+            for (let i = 0; i < timeData.length; i++) {
+                csvContent += `${timeData[i].toFixed(3)},${targetPositionData[i].toFixed(3)},${angleData[i].toFixed(3)},${targetVelocityData[i].toFixed(3)},${velocityData[i].toFixed(3)},${outputData[i].toFixed(3)},${positionErrorData[i].toFixed(3)},${velocityErrorData[i].toFixed(3)}\n`;
+            }
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `pid_simulation_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            resetBtn.click();
+            updatePidGroupVisibility();
+        });
+    </script>
+</body>
+</html>
